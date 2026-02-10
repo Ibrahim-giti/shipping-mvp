@@ -1,43 +1,36 @@
 from fastapi import FastAPI, Request, HTTPException
-import hmac
-import hashlib
-import base64
-import json
+import hmac, hashlib, base64, json
+from database import init_db, save_order
 
 app = FastAPI()
+init_db()
 
 SHOPIFY_WEBHOOK_SECRET = "e43a4e106cf1e30897e57d16061b534b97a7c33c929b66490671122d18e0e6c1"
-
-def verify_shopify_hmac(data: bytes, hmac_header: str) -> bool:
-    digest = hmac.new(
-        SHOPIFY_WEBHOOK_SECRET.encode(),
-        data,
-        hashlib.sha256
-    ).digest()
-
-    calculated_hmac = base64.b64encode(digest).decode()
-    return hmac.compare_digest(calculated_hmac, hmac_header or "")
-
 
 @app.post("/webhooks/shopify/orders-create")
 async def shopify_orders_create(request: Request):
     raw_body = await request.body()
     hmac_header = request.headers.get("X-Shopify-Hmac-Sha256")
 
-    if not verify_shopify_hmac(raw_body, hmac_header):
-        raise HTTPException(status_code=401, detail="Invalid HMAC")
+    # ... (Garde ton code de vérification HMAC ici) ...
 
     order = json.loads(raw_body)
+    
+    # On récupère l'adresse de livraison
+    shipping_addr = order.get("shipping_address", {})
+    
+    # Extraction du nom complet (Shopify fournit souvent 'name' qui est 'Prénom + Nom')
+    # Ou on le reconstruit nous-mêmes pour être sûr :
+    first_name = shipping_addr.get("first_name", "")
+    last_name = shipping_addr.get("last_name", "")
+    full_name = f"{first_name} {last_name}".strip()
 
-    parsed_order = {
-        "order_id": order["id"],
-        "email": order.get("email"),
-        "weight_grams": order.get("total_weight", 0),
-        "shipping_address": order.get("shipping_address"),
-        "status": "NEW"
-    }
-
-    print("NEW ORDER RECEIVED:")
-    print(parsed_order)
-
-    return {"ok": True}
+    save_order(
+        str(order.get("id")),
+        order.get("email"),
+        order.get("total_weight", 0),
+        shipping_addr, # On passe tout le dictionnaire de l'adresse
+        full_name      # On ajoute le nom extrait explicitement
+    )
+    
+    return {"status": "stored"}
