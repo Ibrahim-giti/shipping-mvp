@@ -2,12 +2,11 @@ from fastapi import FastAPI, Request, HTTPException
 import hmac
 import hashlib
 import base64
-import os
 import json
 
 app = FastAPI()
 
-SHOPIFY_WEBHOOK_SECRET = os.getenv("SHOPIFY_WEBHOOK_SECRET", "dev-secret")
+SHOPIFY_WEBHOOK_SECRET = "e43a4e106cf1e30897e57d16061b534b97a7c33c929b66490671122d18e0e6c1"
 
 def verify_shopify_hmac(data: bytes, hmac_header: str) -> bool:
     digest = hmac.new(

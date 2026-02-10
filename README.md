@@ -31,3 +31,9 @@ The workflow is as follows:
 4. If the webhook is valid, the order data is extracted and stored.  
 5. The data is then ready to automatically generate a **PostNord delivery QR code**, automating the shipping process.  
 
+---
+
+## Command
+
+ngrok http 8000 : launch ngrok 
+uvicorn app:app --reload : run the python code
